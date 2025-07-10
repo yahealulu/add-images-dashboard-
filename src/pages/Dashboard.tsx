@@ -10,9 +10,8 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const perPage = 30; // Fixed at 30 per page as per API
+  const totalPages = 300; // Fixed 300 pages as requested
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,9 +23,6 @@ export const Dashboard: React.FC = () => {
       setLoading(true);
       const response = await apiService.getProducts(currentPage);
       setProducts(response.data.data);
-      // Calculate total pages based on total products divided by 30
-      const calculatedTotalPages = Math.ceil(response.data.total / perPage);
-      setTotalPages(calculatedTotalPages);
       setTotalProducts(response.data.total);
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -47,25 +43,11 @@ export const Dashboard: React.FC = () => {
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
-    // Scroll to top when changing pages
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    // Adjust start page if we're near the end
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
+  // Generate array of 300 page numbers
+  const getAllPageNumbers = () => {
+    return Array.from({ length: 300 }, (_, i) => i + 1);
   };
 
   const getImageUrl = (imagePath: string | null) => {
@@ -75,6 +57,30 @@ export const Dashboard: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Pagination at the top */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Page (1-300)</h2>
+          <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
+            <div className="grid grid-cols-10 sm:grid-cols-15 md:grid-cols-20 lg:grid-cols-25 xl:grid-cols-30 gap-1">
+              {getAllPageNumbers().map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                    currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-3 text-sm text-gray-600">
+            Currently viewing page: <span className="font-semibold text-blue-600">{currentPage}</span>
+          </div>
+        </div>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Products</h1>
@@ -226,78 +232,11 @@ export const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalProducts)} of {totalProducts} results (Page {currentPage} of {totalPages})
-              </div>
-              <div className="flex items-center space-x-1">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                
-                {/* Show first page if not in visible range */}
-                {getPageNumbers()[0] > 1 && (
-                  <>
-                    <button
-                      onClick={() => handlePageChange(1)}
-                      className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      1
-                    </button>
-                    {getPageNumbers()[0] > 2 && (
-                      <div className="px-2 py-2">
-                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {getPageNumbers().map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-                
-                {/* Show last page if not in visible range */}
-                {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
-                  <>
-                    {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
-                      <div className="px-2 py-2">
-                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => handlePageChange(totalPages)}
-                      className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
-                
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+          <div className="px-6 py-4 border-t border-gray-200">
+            <div className="text-sm text-gray-500 text-center">
+              Currently showing products from page {currentPage} • Total products in API: {totalProducts}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </Layout>
