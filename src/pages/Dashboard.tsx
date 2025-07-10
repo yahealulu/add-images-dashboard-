@@ -12,7 +12,7 @@ export const Dashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [perPage, setPerPage] = useState(30);
+  const perPage = 30; // Fixed at 30 per page as per API
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,7 +24,9 @@ export const Dashboard: React.FC = () => {
       setLoading(true);
       const response = await apiService.getProducts(currentPage);
       setProducts(response.data.data);
-      setTotalPages(response.data.last_page);
+      // Calculate total pages based on total products divided by 30
+      const calculatedTotalPages = Math.ceil(response.data.total / perPage);
+      setTotalPages(calculatedTotalPages);
       setTotalProducts(response.data.total);
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -43,7 +45,10 @@ export const Dashboard: React.FC = () => {
   };
 
   const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const getPageNumbers = () => {
@@ -224,7 +229,7 @@ export const Dashboard: React.FC = () => {
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalProducts)} of {totalProducts} results
+                Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalProducts)} of {totalProducts} results (Page {currentPage} of {totalPages})
               </div>
               <div className="flex items-center space-x-1">
                 <button
