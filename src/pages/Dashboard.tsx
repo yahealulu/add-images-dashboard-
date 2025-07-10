@@ -11,7 +11,7 @@ export const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const totalPages = 300; // Fixed 300 pages as requested
+  const totalPages = 100; // Fixed 300 pages as requested
   const navigate = useNavigate();
 
   useEffect(() => {
