@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { Product } from '../types';
 import { apiService } from '../services/api';
-import { Edit, Search, ChevronLeft, ChevronRight, Package, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Edit, Search, ChevronLeft, ChevronRight, Package, Image as ImageIcon, Loader2, MoreHorizontal } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,6 +12,7 @@ export const Dashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [perPage, setPerPage] = useState(30);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,8 +48,14 @@ export const Dashboard: React.FC = () => {
 
   const getPageNumbers = () => {
     const pages = [];
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
 
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
@@ -56,6 +63,10 @@ export const Dashboard: React.FC = () => {
     return pages;
   };
 
+  const getImageUrl = (imagePath: string | null) => {
+    if (!imagePath) return null;
+    return `https://setalkel.amjadshbib.com/public/${imagePath}`;
+  };
   return (
     <Layout>
       <div className="space-y-6">
@@ -124,7 +135,23 @@ export const Dashboard: React.FC = () => {
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <Package className="w-5 h-5 text-gray-400 mr-3" />
+                          <div className="flex-shrink-0 w-12 h-12 mr-4">
+                            {product.image ? (
+                              <img
+                                src={getImageUrl(product.image)}
+                                alt={product.name_translations.en}
+                                className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center ${product.image ? 'hidden' : ''}`}>
+                              <Package className="w-6 h-6 text-gray-400" />
+                            </div>
+                          </div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">
                               {product.name_translations.en}
@@ -197,22 +224,39 @@ export const Dashboard: React.FC = () => {
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                Showing page {currentPage} of {totalPages}
+                Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalProducts)} of {totalProducts} results
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
+                
+                {/* Show first page if not in visible range */}
+                {getPageNumbers()[0] > 1 && (
+                  <>
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      1
+                    </button>
+                    {getPageNumbers()[0] > 2 && (
+                      <div className="px-2 py-2">
+                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                      </div>
+                    )}
+                  </>
+                )}
                 
                 {getPageNumbers().map((page) => (
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       currentPage === page
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-700 hover:bg-gray-100'
@@ -222,10 +266,27 @@ export const Dashboard: React.FC = () => {
                   </button>
                 ))}
                 
+                {/* Show last page if not in visible range */}
+                {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+                  <>
+                    {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
+                      <div className="px-2 py-2">
+                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                      </div>
+                    )}
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+                
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
