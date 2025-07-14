@@ -69,6 +69,38 @@ export const EditProduct: React.FC = () => {
     }
   };
 
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find(item => item.type.startsWith('image/'));
+    
+    if (imageItem) {
+      const file = imageItem.getAsFile();
+      if (file) {
+        handleImageSelect(file);
+      }
+    }
+  };
+
+  // Add global paste event listener
+  React.useEffect(() => {
+    const handleGlobalPaste = async (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find(item => item.type.startsWith('image/'));
+      
+      if (imageItem) {
+        e.preventDefault();
+        const file = imageItem.getAsFile();
+        if (file) {
+          handleImageSelect(file);
+        }
+      }
+    };
+
+    document.addEventListener('paste', handleGlobalPaste);
+    return () => document.removeEventListener('paste', handleGlobalPaste);
+  }, []);
   const handleRemoveImage = () => {
     setSelectedImage(null);
     setPreviewUrl(null);
@@ -233,6 +265,9 @@ export const EditProduct: React.FC = () => {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                onPaste={handlePaste}
+                tabIndex={0}
+                style={{ outline: 'none' }}
               >
                 {previewUrl ? (
                   <div className="relative">
@@ -253,15 +288,32 @@ export const EditProduct: React.FC = () => {
                   <div>
                     <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-lg font-medium text-gray-900 mb-2">
-                      Drop your image here, or click to browse
+                      Drop your image here, click to browse, or paste from clipboard
                     </p>
                     <p className="text-sm text-gray-600">
-                      Supports: PNG, JPG, JPEG up to 10MB
+                      Supports: PNG, JPG, JPEG up to 10MB • Use Ctrl+V to paste
                     </p>
                   </div>
                 )}
               </div>
 
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">i</span>
+                    </div>
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">How to paste an image:</p>
+                    <ul className="space-y-1 text-blue-700">
+                      <li>• Copy an image from any application (Ctrl+C)</li>
+                      <li>• Click anywhere on this page and press Ctrl+V</li>
+                      <li>• Or click in the upload area above and paste</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
               <div className="flex justify-center">
                 <input
                   ref={fileInputRef}
